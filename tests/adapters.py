@@ -9,6 +9,8 @@ import torch
 from jaxtyping import Bool, Float, Int
 from torch import Tensor
 
+from cs336_basics.tokenizer.bpe_utilis import run_train_bpe_func
+from cs336_basics.tokenizer.bpe_tokenizer import bpe_tokenizer
 
 def run_linear(
     d_in: int,
@@ -559,7 +561,7 @@ def get_tokenizer(
     Returns:
         A BPE tokenizer that uses the provided vocab, merges, and special tokens.
     """
-    raise NotImplementedError
+    return bpe_tokenizer(vocab,merges,special_tokens)
 
 
 def run_train_bpe(
@@ -589,4 +591,6 @@ def run_train_bpe(
                 representing that <token1> was merged with <token2>.
                 Merges are ordered by order of creation.
     """
-    raise NotImplementedError
+    # 1.用regex分词，得到初始token列表
+    # 2.统计相邻 token bytes 频率， 再不断merge
+    return run_train_bpe_func(input_path, vocab_size, special_tokens,*kwargs)
