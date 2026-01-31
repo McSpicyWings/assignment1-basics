@@ -22,10 +22,10 @@ class Linear(torch.nn.Module):
         # self.d_out = out_features
         self.device = device
         self.dtype = dtype
-        self.W = nn.Parameter(torch.empty(out_features, in_features, dtype=self.dtype, device=self.device))
+        self.weight = nn.Parameter(torch.empty(out_features, in_features, dtype=self.dtype, device=self.device))
         
         std = math.sqrt(2/(in_features + out_features))
-        nn.init.trunc_normal_(self.W, mean = 0, std = std, a=-3*std, b = 3*std)
+        nn.init.trunc_normal_(self.weight, mean = 0, std = std, a=-3*std, b = 3*std)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply the linear transformation to the input
@@ -36,4 +36,4 @@ class Linear(torch.nn.Module):
         Returns:
             torch.Tensor:
         """
-        return einops.einsum(self.W, x, "d_out d_in, ... d_in -> ... d_out")
+        return einops.einsum(self.weight, x, "d_out d_in, ... d_in -> ... d_out")

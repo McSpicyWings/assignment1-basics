@@ -35,7 +35,7 @@ def run_linear(
         Float[Tensor, "... d_out"]: The transformed output of your linear module.
     """
     linear_layer = Linear(d_in, d_out)
-    linear_layer.load_state_dict({"W":weights})
+    linear_layer.load_state_dict({"weight":weights})
     return linear_layer(in_features)
 
 
@@ -95,9 +95,10 @@ def run_swiglu(
     # swiglu.w3.weight.data = w3_weight
     
     swiglu = FFNlayer(d_model,d_ff)
-    swiglu.load_state_dict({"W1":w1_weight,"W2":w2_weight,"W3":w3_weight})
+    # swiglu.load_state_dict({"W1":w1_weight,"W2":w2_weight,"W3":w3_weight})
     # swiglu.W2.weight.data = w2_weight
     # swiglu.W3.weight.data = w3_weight
+    swiglu.load_state_dict({"w1.weight":w1_weight,"w2.weight":w2_weight,"w3.weight":w3_weight})
     return swiglu(in_features)
     raise NotImplementedError
 
@@ -157,7 +158,7 @@ def run_multihead_self_attention(
     """
     d_in = q_proj_weight.size(1)
     MHA = CasualMultiHeadAtten(d_model,num_heads,d_in)
-    MHA.load_state_dict({"q_proj_weight":q_proj_weight,"k_proj_weight":k_proj_weight,"v_proj_weight":v_proj_weight,"output_proj_weight":o_proj_weight})
+    MHA.load_state_dict({"q_proj.weight":q_proj_weight,"k_proj.weight":k_proj_weight,"v_proj.weight":v_proj_weight,"output_proj.weight":o_proj_weight})
     return MHA(in_features)
     raise NotImplementedError
 
@@ -201,7 +202,7 @@ def run_multihead_self_attention_with_rope(
     """
     d_in = q_proj_weight.size(1)
     MHA = CasualMultiHeadAttenRope(d_model,num_heads,d_in,max_seq_len,theta)
-    MHA.load_state_dict({"q_proj_weight":q_proj_weight,"k_proj_weight":k_proj_weight,"v_proj_weight":v_proj_weight,"output_proj_weight":o_proj_weight})
+    MHA.load_state_dict({"q_proj.weight":q_proj_weight,"k_proj.weight":k_proj_weight,"v_proj.weight":v_proj_weight,"output_proj.weight":o_proj_weight})
     return MHA(in_features,token_positions)
 
     raise NotImplementedError
@@ -301,7 +302,10 @@ def run_transformer_block(
         Float[Tensor, "batch sequence_length d_model"] Tensor with the output of
         running the Transformer block on the input features while using RoPE.
     """
-    tb = TransformerLayer(d_model,num_heads, d_ff, max_seq_len, theta, weights)
+    tb = TransformerBlock(d_model,num_heads, d_ff, max_seq_len, theta)
+    # tb = TransformerBlock(d_model, num_heads, d_ff, max_seq_len, theta)
+    # 自动解析 ln2.weight attn.output_proj.weight
+    tb.load_state_dict(weights)
     return tb(in_features)
 
     raise NotImplementedError
@@ -386,7 +390,9 @@ def run_transformer_lm(
         Float[Tensor, "batch_size sequence_length vocab_size"]: Tensor with the predicted unnormalized
         next-word distribution for each token.
     """
-    Transformer = TransformerLM(vocab_size,context_length,d_model,num_layers,num_heads,d_ff,rope_theta,weights)
+    # Transformer = TransformerLM(vocab_size,context_length,d_model,num_layers,num_heads,d_ff,rope_theta,weights)
+    Transformer = BaseLM(vocab_size,context_length,d_model,num_layers,num_heads,d_ff,rope_theta)
+    Transformer.load_state_dict(weights)
     return Transformer(in_indices)
     raise NotImplementedError
 

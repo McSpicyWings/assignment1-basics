@@ -4,6 +4,7 @@ import einops
 from torch import Tensor,inf
 from jaxtyping import Float,Bool,Int
 from cs336_basics.layer.RotaryEmbeding import RotaryPositionalEmbedding
+from .linear import Linear
 
 from math import sqrt
 
@@ -36,14 +37,19 @@ class CasualMultiHeadAtten(torch.nn.Module):
         
         self.num_head = num_head
         self.d_k = d_model // num_head
-        self.q_proj_weight = torch.nn.Parameter(torch.empty(d_model, d_in))
-        self.k_proj_weight = torch.nn.Parameter(torch.empty(d_model, d_in))
-        self.v_proj_weight = torch.nn.Parameter(torch.empty(d_model, d_in))
-        self.output_proj_weight = torch.nn.Parameter(torch.empty(d_model, d_model))
+        # self.q_proj = torch.nn.Parameter(torch.empty(d_model, d_in))
+        # self.k_proj = torch.nn.Parameter(torch.empty(d_model, d_in))
+        # self.v_proj = torch.nn.Parameter(torch.empty(d_model, d_in))
+        # self.output_proj_weight = torch.nn.Parameter(torch.empty(d_model, d_model))
+        self.q_proj = Linear(d_in, d_model)
+        self.k_proj = Linear(d_in, d_model)
+        self.v_proj = Linear(d_in, d_model)
+        self.output_proj = Linear(d_model, d_model)
+        
         
     def forward(self,x:Float[Tensor, " ... sequence_length d_in"])->Float[Tensor, " ... sequence_length d_out"]:
         # Wq,Wk,Wv: (d_model, d_in)
-        Wqkv = torch.cat([self.q_proj_weight, self.k_proj_weight, self.v_proj_weight], dim=0)  # (3*d_model, d_in)
+        Wqkv = torch.cat([self.q_proj.weight, self.k_proj.weight, self.v_proj.weight], dim=0)  # (3*d_model, d_in)
         qkv  = einops.einsum(Wqkv, x, "qkv_out d_in, ... seq d_in -> ... seq qkv_out")          # (..., seq, 3*d_model)
 
         Q, K, V = qkv.chunk(3, dim=-1)  # 每个都是 (..., seq, d_model)
@@ -54,28 +60,9 @@ class CasualMultiHeadAtten(torch.nn.Module):
         mask = torch.tril(torch.ones(seq_len, seq_len, dtype=torch.bool, device=x.device), diagonal=0) #包括
         attn_out = scaled_dot_product_attention(Q, K, V, mask)  # (..., h, seq, d_head)
         attn_out = einops.rearrange(attn_out,"... head seq d -> ... seq (head d)")
-        return einops.einsum(self.output_proj_weight, attn_out , "d_out d_model, ... seq_len d_model  -> ... seq_len d_out")
+        # return einops.einsum(self.output_proj_weight, attn_out , "d_out d_model, ... seq_len d_model  -> ... seq_len d_out")
+        return self.output_proj(attn_out)
     
-    
-        # # 分成 num_head个 QKV矩阵
-        # # 对于 multiheadattn qkv的数量应该相同
-        # # 其实直接定义成这个shape会更好
-        # # (d_k d_in) 的矩阵就是做projection的
-        # mq = einops.rearrange(self.q_proj_weight,"... (num_head d_k) d_in -> ... num_head d_k d_in", num_head = self.num_head)
-        # mk = einops.rearrange(self.k_proj_weight,"... (num_head d_k) d_in -> ... num_head d_k d_in", num_head = self.num_head)
-        # mv = einops.rearrange(self.v_proj_weight,"... (num_head d_k) d_in -> ... num_head d_k d_in", num_head = self.num_head)
-        # mo = einops.rearrange(self.output_proj_weight,"d_out (num_head d_v) -> d_out num_head d_v", num_head = self.num_head)
-        # # 矩阵乘法
-        # # x中 每个seq里有seq_len 个token 每个token是d_in维度的embeding
-        # Q = einops.einsum(mq, x, "... num_head d_k d_in, ... seq_len d_in -> ... num_head seq_len d_k")
-        # K = einops.einsum(mk, x, "... num_head d_k d_in, ... seq_len d_in -> ... num_head seq_len d_k")
-        # V = einops.einsum(mv, x, "... num_head d_k d_in, ... seq_len d_in -> ... num_head seq_len d_k")
-        # # mask是一个头内部的？ yes  把d_k 看作一个embeding就好理解了 而点积又支持了batch
-        # seq_len = x.size(-2)
-        # mask = torch.triu(torch.ones(seq_len, seq_len, dtype=torch.bool), diagonal=1) #不包括对角线
-        # # o_proj 是将内部的d_v变回d_out(也就是d_in)
-        # # 注意 d_k = d_v = d_q
-        # return einops.einsum(mo, scaled_dot_product_attention(Q, K, V, mask) , "d_out num_head d_v, ... num_head seq_len d_v  -> ... seq_len d_out")
 
 class CasualMultiHeadAttenRope(CasualMultiHeadAtten):
     def __init__(self, d_model, num_head, d_in, max_seq_len: int = None, theta: float = None):
@@ -85,7 +72,7 @@ class CasualMultiHeadAttenRope(CasualMultiHeadAtten):
             self.RoPE = RotaryPositionalEmbedding(theta,d_head,max_seq_len)
     
     def forward(self, x, token_positions = None):
-        Wqkv = torch.cat([self.q_proj_weight, self.k_proj_weight, self.v_proj_weight], dim=0)  # (3*d_model, d_in)
+        Wqkv = torch.cat([self.q_proj.weight, self.k_proj.weight, self.v_proj.weight], dim=0)  # (3*d_model, d_in)
         qkv  = einops.einsum(Wqkv, x, "qkv_out d_in, ... seq d_in -> ... seq qkv_out")          # (..., seq, 3*d_model)
 
         Q, K, V = qkv.chunk(3, dim=-1)  # 每个都是 (..., seq, d_model)
@@ -98,7 +85,8 @@ class CasualMultiHeadAttenRope(CasualMultiHeadAtten):
         mask = torch.tril(torch.ones(seq_len, seq_len, dtype=torch.bool, device=x.device), diagonal=0) #包括
         attn_out = scaled_dot_product_attention(Q, K, V, mask)  # (..., h, seq, d_head)
         attn_out = einops.rearrange(attn_out,"... head seq d -> ... seq (head d)")
-        return einops.einsum(self.output_proj_weight, attn_out , "d_out d_model, ... seq_len d_model  -> ... seq_len d_out")
+        # return einops.einsum(self.output_proj.weight, attn_out , "d_out d_model, ... seq_len d_model  -> ... seq_len d_out")
+        return self.output_proj(attn_out)
 
 # # 二合一版本
 # class CasualMultiHeadAttenRope(torch.nn.Module):
