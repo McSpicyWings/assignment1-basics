@@ -1,4 +1,4 @@
-from cs336_basics.tokenizer.bpe_utilis import run_train_bpe_func
+from cs336_basics.tokenizer.bpe_utilis import train_bpe_func
 
 # vocab,merges = run_train_bpe_func("data/TinyStoriesV2-GPT4-train.txt",10000,["<|endoftext|>"])
 # import json
@@ -13,5 +13,5 @@ from cs336_basics.tokenizer.bpe_utilis import run_train_bpe_func
 #     for a, b in merges:
 #         f.write(f"{a.decode('utf-8', errors='replace')} {b.decode('utf-8', errors='replace')}\n")
         
-vocab,merges = run_train_bpe_func("data/TinyStoriesV2-GPT4-train.txt",10000,["<|endoftext|>"])
+vocab,merges = train_bpe_func("data/TinyStoriesV2-GPT4-train.txt",10000,["<|endoftext|>"])
 print(len(vocab),len(merges))

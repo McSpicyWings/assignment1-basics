@@ -81,7 +81,7 @@ class TransformerBlock(torch.nn.Module):
         
         
 
-class BaseLM(torch.nn.Module):
+class TransformerLM(torch.nn.Module):
     """
     Transformer Language Model that can be trained from scratch.
     This version initializes all weights randomly and properly registers
@@ -114,6 +114,7 @@ class BaseLM(torch.nn.Module):
         # Embeddings and output layers
         # Use attribute names that match the expected state_dict keys
         self.token_embeddings = Embedding(vocab_size, d_model, device=device, dtype=dtype)
+        # output_embedding
         self.lm_head = Linear(d_model, vocab_size, device=device, dtype=dtype)
         self.ln_final = RMSNorm(d_model, device=device, dtype=dtype)
         

@@ -66,26 +66,3 @@ def get_batch(
     # x = torch.stack([torch.from_numpy( (dataset[i : i + context_length]).astype(np.int64)) for i in starts]).to(device,dtype=torch.long)
     # y = torch.stack([torch.from_numpy( (dataset[i + 1 : i + 1 + context_length]).astype(np.int64)) for i in starts]).to(device,dtype=torch.long)
     # return x,y
-
-# What if the dataset is too big to load into memory? We can use a Unix systemcall named mmap
-# which maps a file on disk to virtual memory, and lazily loads the file contents when that memory location is
-# accessed. Thus, you can “pretend” you have the entire dataset in memory. Numpy implements this through
-# np.memmap (or the flag mmap_mode='r' to np.load , if you originally saved the array with
-# will return a numpy array-like object that loads the entries on-demand as you access them.
-# np.save
-# ), which
-# When sampling
-# from your dataset (i.e., a numpy array) during training, be sure load the dataset in memory
-# mapped mode
-# (via
-# np.memmap
-# or the flag
-# array). Make sure you also specify a
-# dtype
-# mmap_mode='r'
-# to
-# np.load
-# , depending on how you saved the
-# that matches the array that you’re loading. It may be helpful
-# to explicitly verify that the memory-mapped data looks correct (e.g., doesn’t contain values beyond the
-# expected vocabulary size).

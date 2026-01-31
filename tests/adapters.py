@@ -10,7 +10,7 @@ from jaxtyping import Bool, Float, Int
 from torch import Tensor
 
 
-from cs336_basics.tokenizer.bpe_utilis import run_train_bpe_func
+from cs336_basics.tokenizer.bpe_utilis import train_bpe_func
 from cs336_basics.tokenizer.bpe_tokenizer import bpe_tokenizer
 from cs336_basics.layer import *
 from cs336_basics.trainer import *
@@ -391,7 +391,7 @@ def run_transformer_lm(
         next-word distribution for each token.
     """
     # Transformer = TransformerLM(vocab_size,context_length,d_model,num_layers,num_heads,d_ff,rope_theta,weights)
-    Transformer = BaseLM(vocab_size,context_length,d_model,num_layers,num_heads,d_ff,rope_theta)
+    Transformer = TransformerLM(vocab_size,context_length,d_model,num_layers,num_heads,d_ff,rope_theta)
     Transformer.load_state_dict(weights)
     return Transformer(in_indices)
     raise NotImplementedError
@@ -643,4 +643,4 @@ def run_train_bpe(
     """
     # 1.用regex分词，得到初始token列表
     # 2.统计相邻 token bytes 频率， 再不断merge
-    return run_train_bpe_func(input_path, vocab_size, special_tokens,*kwargs)
+    return train_bpe_func(input_path, vocab_size, special_tokens,*kwargs)

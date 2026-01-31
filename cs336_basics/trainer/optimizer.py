@@ -60,15 +60,15 @@ class AdamWOptim(torch.optim.Optimizer):
         return loss
 
 @torch.no_grad()
-def lr_cosine_schedule(t,a_max,a_min,t_w,t_c):
+def lr_cosine_schedule(t, lr_max, lr_min, warmup_iter, cosine_cycle_iters):
     if t < 0:
         raise ValueError(f"t should be positive = {t}")
-    if t < t_w:
-        return a_max * t / t_w
-    elif t_w <= t <= t_c:
-        return a_min + 0.5 * (1.0 + math.cos(math.pi * (t - t_w) / (t_c - t_w)) ) * (a_max - a_min)
+    if t < warmup_iter:
+        return lr_max * t / warmup_iter
+    elif warmup_iter <= t <= cosine_cycle_iters:
+        return lr_min + 0.5 * (1.0 + math.cos(math.pi * (t - warmup_iter) / (cosine_cycle_iters - warmup_iter)) ) * (lr_max - lr_min)
     else:
-        return a_min
+        return lr_min
 
 
 def gradient_clip(parameters: Iterable[torch.nn.Parameter], max_l2_norm:float, eps:float = 1e-6):

@@ -81,7 +81,7 @@ def _count_chunk_pretokens(
     return counts
 
 
-def run_train_bpe_func(
+def train_bpe_func(
     input_path: str | os.PathLike,
     vocab_size: int,
     special_tokens: list[str],
