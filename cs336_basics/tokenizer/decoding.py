@@ -79,28 +79,29 @@ def decode(
     finished = torch.zeros(B, dtype=torch.bool, device=device)
     
     for _ in range(max_new_tokens):
-        x = out[: -context_length:]
+        # Take last context_length tokens (slice sequence dimension, not batch)
+        x = out[:, -context_length:]
         logits = model(x)
         logits_last = logits[:, -1, :]
         
         if temperature != 1.0:
             logits_last = logits_last / temperature
         
-        # softmax
-        probs = softmax(logits_last,)
+        # softmax over vocabulary dimension
+        probs = softmax(logits_last, dim=-1)
         
         if top_p < 1.0:
             next_token = _sample_top_p(probs, top_p)
         else:
-            next_token = torch.multinomial(probs,num_samples=1).squeeze(-1)
+            next_token = torch.multinomial(probs, num_samples=1).squeeze(-1)
         
-        # 以及finished序列，继续输出eos
-        next_token = torch.where(finished, torch.full_like(next_token,eos_token_id), next_token)
+        # For finished sequences, continue outputting eos
+        next_token = torch.where(finished, torch.full_like(next_token, eos_token_id), next_token)
         
         out = torch.cat([out, next_token.unsqueeze(-1)], dim=-1)
         
-        finished = finished | next_token == eos_token_id
+        finished = finished | (next_token == eos_token_id)
         if torch.all(finished):
             break
-        
-        return out if is_batched else out.squeeze(0)
+    
+    return out if is_batched else out.squeeze(0)
