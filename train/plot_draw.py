@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 
 # Use absolute path relative to project root
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-RUNS_DIR = PROJECT_ROOT / "runs_grid"
-OUT_DIR = PROJECT_ROOT / "plots"
+RUNS_DIR = PROJECT_ROOT / "data/runs_grid"
+OUT_DIR = PROJECT_ROOT / "data/plots"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # 你的 train.log 里常见两类行（来自 train.py 的 logger.info）:contentReference[oaicite:6]{index=6}
