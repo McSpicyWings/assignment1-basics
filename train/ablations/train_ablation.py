@@ -23,7 +23,7 @@ import sys
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from train.ablations.models import create_model
-from cs336_basics.trainer.optimizer import AdamW
+from cs336_basics.trainer.optimizer import AdamWOptim
 
 
 def get_logger(log_file: Optional[Path] = None):
@@ -193,11 +193,11 @@ def main():
     logger.info(f"Model parameters: {n_params:,} (non-embedding: {n_params_nonemb:,})")
     
     # 优化器
-    optimizer = AdamW(
+    optimizer = AdamWOptim(
         model.parameters(),
         lr=args.lr,
         weight_decay=args.weight_decay,
-        betas=(0.9, 0.999),
+        betas=(0.9, 0.95),
         eps=1e-8,
     )
     
